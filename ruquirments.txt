@@ -1,4 +1,1 @@
-lxml
-bs4
-pillow
-pyquery
+pipenv install -rlxml bs4 pillow pyquery

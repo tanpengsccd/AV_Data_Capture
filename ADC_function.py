@@ -100,12 +100,13 @@ def getXpathSingle(htmlcode,xpath):
 def get_html(url,cookies = None):#网页请求核心
     proxy, timeout, retry_count = get_network_settings()
     i = 0
+    print(url)
     while i < retry_count:
         try:
             if not proxy == '':
-                proxies = {"http": "http://" + proxy,"https": "https://" + proxy}
+                proxies = {"http": proxy, "https": proxy}
                 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36'}
-                getweb = requests.get(str(url), headers=headers, timeout=timeout,proxies=proxies, cookies=cookies)
+                getweb = requests.get(str(url), headers=headers, timeout=timeout, proxies=proxies, cookies=cookies)
                 getweb.encoding = 'utf-8'
                 return getweb.text
             else:
@@ -119,18 +120,3 @@ def get_html(url,cookies = None):#网页请求核心
     print('[-]Connect Failed! Please check your Proxy or Network!')
 
 
-def post_html(url: str, query: dict) -> requests.Response:
-    proxy, timeout, retry_count = get_network_settings()
-
-    if proxy:
-        proxies = {"http": "http://" + proxy, "https": "https://" + proxy}
-    else:
-        proxies = {}
-
-    for i in range(retry_count):
-        try:
-            result = requests.post(url, data=query, proxies=proxies)
-            return result
-        except requests.exceptions.ProxyError:
-            print("[-]Connect retry {}/{}".format(i+1, retry_count))
-    print("[-]Connect Failed! Please check your Proxy or Network!")

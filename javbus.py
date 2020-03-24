@@ -116,7 +116,7 @@ def main_uncensored(number):
         htmlcode = get_html('https://www.javbus.com/' + number.replace('-','_'))
         dww_htmlcode = get_html("https://www.dmm.co.jp/mono/dvd/-/detail/=/cid=" + number.replace("-", ''))
     dic = {
-        'title': str(re.sub('\w+-\d+-','',getTitle(htmlcode))).replace(getNum(htmlcode)+'-',''),
+        'title': str(re.sub('\w+-\d+-', '', getTitle(htmlcode))).replace(getNum(htmlcode)+'-', ''),
         'studio': getStudio(htmlcode),
         'year': getYear(htmlcode),
         'outline': getOutline(dww_htmlcode),
