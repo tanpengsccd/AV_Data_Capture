@@ -1,4 +1,15 @@
 import os
-a = [12, 3, 4, 6, 7, 13, 21]
-newList = [x for x in a]
-print(newList)
+from itertools import groupby
+
+def go():
+    a = [1,2,3,4,5,6]
+    # [print(x) for x in a]
+    # [print(x) for x in a]
+    a1 = groupby(a, key=lambda k: (k/2))
+    for i in a1:
+        print(i)
+    for i in a1:
+        print(i)
+
+go()
+# print(newList)

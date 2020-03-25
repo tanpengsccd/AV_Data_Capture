@@ -103,9 +103,6 @@ def getDataFromJSON(file_number):  # 从JSON返回元数据
 
     if title == '' or number == '':
         raise Exception('[-]Movie Data not found!')
-        # print('[-]Movie Data not found!')
-        # moveFailedFolder(filepath, failed_folder)
-        # return
 
     # if imagecut == '3':
     #     DownloadFileWithFilename()
@@ -646,6 +643,7 @@ def core_main(file_path, number_th):
         json_data = getDataFromJSON(number)  # 定义番号
     except Exception as e:
         print(e)
+        pass
     if json_data["number"] != number:
         # fix issue #119
         # the root cause is we normalize the search id
@@ -656,26 +654,28 @@ def core_main(file_path, number_th):
     imagecut = json_data['imagecut']
     tag = json_data['tag']
     # =======================================================================判断-C,-CD后缀
-    if '-CD' in filepath or '-cd' in filepath:
-        multi_part = 1
-        part = get_part(filepath, config.failed_folder)
+    # if '-CD' in filepath or '-cd' in filepath:
+    #     multi_part = 1
+    #     part = get_part(filepath, config.failed_folder)
+
     if '-c.' in filepath or '-C.' in filepath or '中文' in filepath or '字幕' in filepath:
         cn_sub = '1'
         c_word = '-C'  # 中文字幕影片后缀
 
     # CreatFailedFolder(config.failed_folder)  # 创建输出失败目录
     debug_mode(json_data)  # 调试模式检测
-    path = creatFolder(config.success_folder, json_data['location_rule'], json_data, config.escape_literals)  # 创建文件夹
+    return  json_data
+    # path = creatFolder(config.success_folder, json_data['location_rule'], json_data, config.escape_literals)  # 创建文件夹
     # =======================================================================刮削模式
-    if config.program_mode == '1':
-        if multi_part == 1:
-            number += part  # 这时number会被附加上CD1后缀
-        smallCoverCheck(path, number, imagecut, json_data['cover_small'], c_word, option, filepath, config.failed_folder)  # 检查小封面
-        imageDownload(option, json_data['cover'], number, c_word, path, multi_part, filepath, config.failed_folder)  # creatFoder会返回番号路径
-        cutImage(option, imagecut, path, number, c_word)  # 裁剪图
-        copyRenameJpgToBackdrop(option, path, number, c_word)
-        PrintFiles(option, path, c_word, json_data['naming_rule'], part, cn_sub, json_data, filepath, config.failed_folder, tag)  # 打印文件
-        pasteFileToFolder(filepath, path, number, c_word)  # 移动文件
-        # =======================================================================整理模式
-    elif config.program_mode == '2':
-        pasteFileToFolder_mode2(filepath, path, multi_part, number, part, c_word)  # 移动文件
+    # if config.program_mode == '1':
+    #     if multi_part == 1:
+    #         number += part  # 这时number会被附加上CD1后缀
+    #     smallCoverCheck(path, number, imagecut, json_data['cover_small'], c_word, option, filepath, config.failed_folder)  # 检查小封面
+    #     imageDownload(option, json_data['cover'], number, c_word, path, multi_part, filepath, config.failed_folder)  # creatFoder会返回番号路径
+    #     cutImage(option, imagecut, path, number, c_word)  # 裁剪图
+    #     copyRenameJpgToBackdrop(option, path, number, c_word)
+    #     PrintFiles(option, path, c_word, json_data['naming_rule'], part, cn_sub, json_data, filepath, config.failed_folder, tag)  # 打印文件
+    #     pasteFileToFolder(filepath, path, number, c_word)  # 移动文件
+    #     # =======================================================================整理模式
+    # elif config.program_mode == '2':
+    #     pasteFileToFolder_mode2(filepath, path, multi_part, number, part, c_word)  # 移动文件
