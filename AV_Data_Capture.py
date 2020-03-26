@@ -14,7 +14,7 @@ import argparse
 from pathlib import Path
 from operator import itemgetter
 from itertools import groupby
-import panda as pd
+import pandas as pd
 
 
 config = ConfigApp()
@@ -175,17 +175,23 @@ if __name__ == '__main__':
     # movie_list = movie_lists(config.escape_folder)
     # for i in movie_list:
     #     print(i)
-    # 一下是为了测试的数据
+
+    # 以下是测试的数据
     f = open('TestPaths.txt', 'r')
     movie_list = [line[:-1] for line in f.readlines()]
     f.close()
-    # 获取 路径:(番号，集数) 的字典->list
-    path_numberEpisodes = get_numbers(movie_list).items()
-    [print(i[1], i[0]) for i in path_numberEpisodes]
+    # 获取 番号,集数,路径  的字典->list
+    path_numberEpisodes = [[codeEposode[0], codeEposode[1], path] for path, codeEposode in get_numbers(movie_list).items()]
+    [print(i) for i in path_numberEpisodes]
     # 排序
     # sorted_path_number_episodes = sorted(path_number_episodes, key=lambda kv: (str(kv[1][0]), str(kv[1][1])))
     # 按 番号和集数分组，每组元素数量大于1会产生覆盖，需要使用策略1.自动 1.1 取体积大的 1.2 取体积小的 1.3 选择特定后缀的  2. 手动
-    # "https://www.jianshu.com/p/4345878fb316"
+    # "https://pandas.pydata.org/pandas-docs/stable/user_guide/groupby.html"
+    df = pd.DataFrame(path_numberEpisodes, columns=('path', 'code', 'ep'))
+    print(df)
+    print(df.groupby(level=0).groups)
+    # ss = pd.MultiIndex.from_arrays(path_numberEpisodes, names=('path', 'code', 'ep'))
+    # print(ss)
     groupbycodeNumber_path_number_episodes = groupby(path_numberEpisodes, key=lambda kv: (kv[1]))
     print(len(list(groupbycodeNumber_path_number_episodes)))
     print('相同番号的电影：--------------')
