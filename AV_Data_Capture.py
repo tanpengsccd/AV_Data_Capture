@@ -14,6 +14,7 @@ import argparse
 from pathlib import Path
 from operator import itemgetter
 from itertools import groupby
+import panda as pd
 
 
 config = ConfigApp()
@@ -104,12 +105,12 @@ def getNumber(filepath, absolute_path=False):
     if 'FC2' or 'fc2' in name:
         name = name.replace('-PPV', '').replace('PPV-', '').replace('FC2PPV-', 'FC2-').replace('FC2PPV_', 'FC2-')
 
-    #移除重复无意义符号 . ~ - *
+    #移除连续重复无意义符号 . ~ - *
     # p = re.compile(r"([-_*. ~])(\1+)")
     name = re.sub(r"([-_*. ~])(\1+)", r"\1", name)
     # 移除尾部无意义符号 方便识别剧集数
     name = re.sub(r'[-_*. ~]$', "", name)
-    # 提取可能的集数号(只识别一位) part1,ipz.A  NOP019B.HD.wmv
+    # 提取可能的集数号(只识别一位) part1 ，ipz.A  ， CD1 ， NOP019B.HD.wmv
     episodes = 0
     try:
         # 零宽断言获取尾部数字 剧集数 123,abc ,#
@@ -184,6 +185,7 @@ if __name__ == '__main__':
     # 排序
     # sorted_path_number_episodes = sorted(path_number_episodes, key=lambda kv: (str(kv[1][0]), str(kv[1][1])))
     # 按 番号和集数分组，每组元素数量大于1会产生覆盖，需要使用策略1.自动 1.1 取体积大的 1.2 取体积小的 1.3 选择特定后缀的  2. 手动
+    # "https://www.jianshu.com/p/4345878fb316"
     groupbycodeNumber_path_number_episodes = groupby(path_numberEpisodes, key=lambda kv: (kv[1]))
     print(len(list(groupbycodeNumber_path_number_episodes)))
     print('相同番号的电影：--------------')
