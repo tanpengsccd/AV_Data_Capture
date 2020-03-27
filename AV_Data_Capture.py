@@ -83,7 +83,7 @@ def CreatFailedFolder(failed_folder):
 
 # 获取番号，集数
 def getNumber(filepath, absolute_path=False):
-    name = filepath
+    name = filepath.upper()
     if absolute_path:
         name = name.replace('\\', '/')
     # 移除文件类型后缀
@@ -131,17 +131,26 @@ def getNumber(filepath, absolute_path=False):
     # 可能视屏文件名无番号，但是文件夹名含有番号
     # 正则取含-的番号 【字母-[字母]数字】,数字必定大于2位 番号的数组的最后的一个元素
     try:
-        number = re.findall(r'[a-zA-Z|\d]+-[a-zA-Z|\d]*\d{2,}', name)[-1]
-        if number:
-            return number, episodes
+        name = re.findall(r'[a-zA-Z|\d]+-[a-zA-Z|\d]*\d{2,}', name)[-1]
+        # 107NTTR-037 -> NTTR-037
+        searched = re.search(r'([a-zA-Z]{2,})-(?:0*)(\d{3,})', name)
+        if searched:
+            name = '-'.join(searched.groups())
+        # 如果 name 存在 则 返回
+        if name:
+            return name, episodes
     except:
         pass  # 不抛出错误，继续向下运行
     # 提取不含减号-的番号，FANZA CID
-
-    # 非贪婪匹配非特殊字符，零宽断言后，数字至少2位连续,ipz221.part2 ， mide072hhb
+    # 非贪婪匹配非特殊字符，零宽断言后，数字至少2位连续,ipz221.part2 ， mide072hhb ,n1180
     try:
-        number = re.findall(r'[a-zA-Z|\d]+[a-zA-Z|\d]*\d{2,}', name)[-1]
-        return number, episodes
+        name = re.findall(r'[a-zA-Z]+\d{3,}', name)[-1]
+        # re.compile(r'([a-zA-Z]+)(?:\d)(\d{3})', re.IGNORECASE)
+        # search = re.search(r'([a-zA-Z]+)(?:\d)(\d{3})', name, re.IGNORECASE)
+
+
+        name = re.sub(r'([a-zA-Z]{2,})(?:0*)(\d{3,})', r'\1-\2', name)
+        return name, episodes
     except:
         return '', episodes
 
@@ -200,19 +209,23 @@ if __name__ == '__main__':
     groupedCode_code_ep_paths = df.groupby(['code'])
     # print(df.groupby(['code']).describe().unstack())
 
-    # print(len(list(groupbycodeNumber_path_number_episodes)))
-    print('相同番号的电影：--------------')
+    print('---------------------------------')
+    print("Movies:" + str(len(movie_list)))
+    print("Codes:" + str(len(groupedCode_code_ep_paths)) + "  (all unknown movies as 'unknown' code)")
+
+    print('Same Code Movies')
+    print('---------------------------------')
     for code, code_ep_paths in groupedCode_code_ep_paths:
         # itemPaths = list(path_numberEepisode)
         if len(code_ep_paths) > 1:
-            print(code + ":")
-            [print('----ep:' + str(code_ep_path[1]) + ' path:' + str(code_ep_path[2])) for code_ep_path in code_ep_paths.values ]
+            print((code if code else 'unknown' ) + ":" )
+            [print('----ep:' + str(code_ep_path[1]) + ' path:' + str(code_ep_path[2])) for code_ep_path in code_ep_paths.values]
 
 
 
-    # isContinue = input('继续？Y or N')
-    # if isContinue != "Y":
-    #     exit(1)
+    isContinue = input('继续？Y or N\n')
+    if isContinue != "Y":
+        exit(1)
 
     # ========== 野鸡番号拖动 ==========
     # number_argparse = argparse_get_file()
@@ -231,7 +244,8 @@ if __name__ == '__main__':
 
     count = 0
     count_all = str(len(movie_list))
-    print('[+] Find', count_all, 'movies')
+    count_all_grouped = str(len(groupedCode_code_ep_paths))
+    print('[+] Find ', count_all, ' movies,', count_all_grouped, ' numbers')
 
     codeNumberEpisode_nfo_paths = {}
     if config.soft_link:
@@ -266,7 +280,7 @@ if __name__ == '__main__':
             #         print('[+]skip')
             continue
 
-    for code_number, nfo in codeNumberEpisode_nfo_paths:
+    for code_number, nfo in codeNumberEpisode_nfo_paths.items():
         print(code_number + ":")
         print("-----" + nfo)
     # CEF(config.success_folder)

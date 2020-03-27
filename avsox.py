@@ -74,7 +74,8 @@ def getTag(a):  # 获取演员
     return d
 
 def main(number):
-    a = get_html('https://avsox.host/cn/search/' + number)
+    url = 'https://avsox.host/cn/search/' + number
+    a = get_html(url)
     html = etree.fromstring(a, etree.HTMLParser())  # //table/tr[1]/td[1]/text()
     result1 = str(html.xpath('//*[@id="waterfall"]/div/a/@href')).strip(" ['']")
     if result1 == '' or result1 == 'null' or result1 == 'None':

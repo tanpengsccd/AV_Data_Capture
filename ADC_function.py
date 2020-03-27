@@ -114,7 +114,8 @@ def get_html(url,cookies = None):#网页请求核心
                 getweb = requests.get(str(url), headers=headers, timeout=timeout, cookies=cookies)
                 getweb.encoding = 'utf-8'
                 return getweb.text
-        except:
+        except Exception as e:
+            print(e)
             i += 1
             print('[-]Connect retry '+str(i)+'/'+str(retry_count))
     print('[-]Connect Failed! Please check your Proxy or Network!')

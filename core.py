@@ -646,15 +646,15 @@ def core_main(number_th):
     except Exception as e:
         print(e)
         pass
-    if json_data.get('number') != number:
+    # if json_data.get('number') != number:
         # fix issue #119
         # the root cause is we normalize the search id
         # PrintFiles() will use the normalized id from website,
         # but pasteFileToFolder() still use the input raw search id
         # so the solution is: use the normalized search id
-        number = json_data["number"]
-    imagecut = json_data['imagecut']
-    tag = json_data['tag']
+        # number = json_data["number"]
+    # imagecut = json_data['imagecut']
+    # tag = json_data['tag']
     # =======================================================================判断-C,-CD后缀
     # if '-CD' in filepath or '-cd' in filepath:
     #     multi_part = 1
@@ -665,8 +665,8 @@ def core_main(number_th):
     #     c_word = '-C'  # 中文字幕影片后缀
 
     # CreatFailedFolder(config.failed_folder)  # 创建输出失败目录
-    debug_mode(json_data)  # 调试模式检测
-    return  json_data
+    # debug_mode(json_data)  # 调试模式检测
+    return json_data
     # path = creatFolder(config.success_folder, json_data['location_rule'], json_data, config.escape_literals)  # 创建文件夹
     # =======================================================================刮削模式
     # if config.program_mode == '1':
