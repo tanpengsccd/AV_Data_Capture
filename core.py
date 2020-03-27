@@ -70,6 +70,7 @@ def getDataFromJSON(file_number):  # 从JSON返回元数据
         sources.insert(0, sources.pop(sources.index("avsox")))
     elif re.match(r"\d+\D+", file_number) or re.match(r'siro', file_number, re.IGNORECASE):
         sources.insert(0, sources.pop(sources.index("mgstage")))
+        sources.insert(0, sources.pop(sources.index("fanza")))
     elif re.match(r'fc2', file_number, re.IGNORECASE):
         sources.insert(0, sources.pop(sources.index("fc2")))
 
@@ -623,7 +624,7 @@ def debug_mode(json_data):
         aaa = ''
 
 
-def core_main(file_path, number_th):
+def core_main(number_th):
     # =======================================================================初始化所需变量
     multi_part = 0
     part = ''
@@ -637,14 +638,15 @@ def core_main(file_path, number_th):
         print('[-]Config media_warehouse read failed!')
 
 
-    filepath = file_path  # 影片的路径
+    # filepath = file_path  # 影片的路径
     number = number_th
+    json_data = {}
     try:
         json_data = getDataFromJSON(number)  # 定义番号
     except Exception as e:
         print(e)
         pass
-    if json_data["number"] != number:
+    if json_data.get('number') != number:
         # fix issue #119
         # the root cause is we normalize the search id
         # PrintFiles() will use the normalized id from website,
@@ -658,9 +660,9 @@ def core_main(file_path, number_th):
     #     multi_part = 1
     #     part = get_part(filepath, config.failed_folder)
 
-    if '-c.' in filepath or '-C.' in filepath or '中文' in filepath or '字幕' in filepath:
-        cn_sub = '1'
-        c_word = '-C'  # 中文字幕影片后缀
+    # if '-c.' in filepath or '-C.' in filepath or '中文' in filepath or '字幕' in filepath:
+    #     cn_sub = '1'
+    #     c_word = '-C'  # 中文字幕影片后缀
 
     # CreatFailedFolder(config.failed_folder)  # 创建输出失败目录
     debug_mode(json_data)  # 调试模式检测

@@ -17,6 +17,8 @@ from itertools import groupby
 import pandas as pd
 
 
+
+
 config = ConfigApp()
 
 patern_of_file_name_sufixes = r'.(mp4|avi|rmvb|wmv|mov|mkv|flv|ts|m2ts)$'
@@ -181,28 +183,33 @@ if __name__ == '__main__':
     movie_list = [line[:-1] for line in f.readlines()]
     f.close()
     # 获取 番号,集数,路径  的字典->list
-    path_numberEpisodes = [[codeEposode[0], codeEposode[1], path] for path, codeEposode in get_numbers(movie_list).items()]
-    [print(i) for i in path_numberEpisodes]
+    code_ep_paths = [[codeEposode[0], codeEposode[1], path] for path, codeEposode in get_numbers(movie_list).items()]
+    [print(i) for i in code_ep_paths]
     # 排序
     # sorted_path_number_episodes = sorted(path_number_episodes, key=lambda kv: (str(kv[1][0]), str(kv[1][1])))
     # 按 番号和集数分组，每组元素数量大于1会产生覆盖，需要使用策略1.自动 1.1 取体积大的 1.2 取体积小的 1.3 选择特定后缀的  2. 手动
     # "https://pandas.pydata.org/pandas-docs/stable/user_guide/groupby.html"
-    df = pd.DataFrame(path_numberEpisodes, columns=('path', 'code', 'ep'))
-    print(df)
-    print(df.groupby(level=0).groups)
-    # ss = pd.MultiIndex.from_arrays(path_numberEpisodes, names=('path', 'code', 'ep'))
-    # print(ss)
-    groupbycodeNumber_path_number_episodes = groupby(path_numberEpisodes, key=lambda kv: (kv[1]))
-    print(len(list(groupbycodeNumber_path_number_episodes)))
-    print('相同番号的电影：--------------')
-    for code_number, path_numberEepisode in groupbycodeNumber_path_number_episodes:
-        itemPaths = list(path_numberEepisode)
-        if len(itemPaths) > 1:
-            print(code_number)
-            for i in itemPaths:
-                print('     ' + i[0])
+    # 显示所有列
+    pd.set_option('display.max_columns', None)
+    # 显示所有行
+    pd.set_option('display.max_rows', None)
+    # 设置value的显示长度为100，默认为50
+    pd.set_option('max_colwidth', 30)
 
-    print(len(list(groupbycodeNumber_path_number_episodes)))
+    df = pd.DataFrame(code_ep_paths, columns=('code', 'ep', 'path'))
+    groupedCode_code_ep_paths = df.groupby(['code'])
+    # print(df.groupby(['code']).describe().unstack())
+
+    # print(len(list(groupbycodeNumber_path_number_episodes)))
+    print('相同番号的电影：--------------')
+    for code, code_ep_paths in groupedCode_code_ep_paths:
+        # itemPaths = list(path_numberEepisode)
+        if len(code_ep_paths) > 1:
+            print(code + ":")
+            [print('----ep:' + str(code_ep_path[1]) + ' path:' + str(code_ep_path[2])) for code_ep_path in code_ep_paths.values ]
+
+
+
     # isContinue = input('继续？Y or N')
     # if isContinue != "Y":
     #     exit(1)
@@ -221,27 +228,31 @@ if __name__ == '__main__':
     #     os._exit(0)
     # ========== 野鸡番号拖动 ==========
 
-    print(len(list(groupbycodeNumber_path_number_episodes)))
+
     count = 0
     count_all = str(len(movie_list))
-    print('[+]Find', count_all, 'movies')
+    print('[+] Find', count_all, 'movies')
 
-    codeNumberEpisode_nfo_paths = []
+    codeNumberEpisode_nfo_paths = {}
     if config.soft_link:
         print('[!] --- Soft link mode is ENABLE! ----')
-    for code_number, path_number_episodes in groupbycodeNumber_path_number_episodes:  # 遍历电影列表 交给core处理
+    for code, code_ep_paths in groupedCode_code_ep_paths:  # 遍历电影列表 交给core处理
         count = count + 1
         percentage = str(count / int(count_all) * 100)[:4] + '%'
         print('[!] - ' + percentage + ' [' + str(count) + '/' + count_all + '] -')
         try:
-            print("[!]Making Data for   [" + path_number_episodes[0] + "], the number is [" + code_number + "]")
-            # core 联网抓取信息
-            nfo = core_main(path_number_episodes[0], code_number)
-            codeNumberEpisode_nfo_paths.append(code_number, nfo)
-            print("[*]======================================================")
+            print("[!]Fetching Data for   [" + code + "]")
+
+            if code:
+                # core 联网抓取信息
+                nfo = core_main(code)
+                codeNumberEpisode_nfo_paths[code] = nfo
+                print("[*]======================================================")
+
+
         except Exception as e:  # 联网抓取信息失败
             print(
-                '[-]' + path_number_episodes[0] + " Can't find info from Internet:" + code_number + ',Reason:' + e)
+                '[-]' + code + " Can't find info from Internet:" + code + ',Reason:' + e)
             # if config.soft_link:
             #     print('[-]Link', file_path_name, 'to failed folder')
             #     os.symlink(file_path_name, config.failed_folder + '/')
