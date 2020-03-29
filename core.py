@@ -9,6 +9,8 @@ import time
 import json
 from ADC_function import *
 import argparse
+from MediaServer import *
+from AV_Data_Capture import config
 # =========website========
 import fc2fans_club
 import mgstage
@@ -35,7 +37,7 @@ def moveFailedFolder(filepath, failed_folder):
     else:
         print('[-]Move to Failed output folder')
         shutil.move(filepath, failed_folder)
-    return 
+    return
 
 
 def CreatFailedFolder(failed_folder):
@@ -44,9 +46,11 @@ def CreatFailedFolder(failed_folder):
             os.makedirs(failed_folder + '/')
         except:
             print("[-]failed!can not be make Failed output folder\n[-](Please run as Administrator)")
-            return 
+            return
 
-# 根据番号获取字典数据
+        # 根据番号获取字典数据
+
+
 def getDataFromJSON(file_number):  # 从JSON返回元数据
     """
     iterate through all services and fetch the data
@@ -62,7 +66,7 @@ def getDataFromJSON(file_number):  # 从JSON返回元数据
     }
 
     # default fetch order list, from the begining to the end
-    sources = ["javbus", "javdb", "fanza", "mgstage", "fc2",  "avsox"]
+    sources = ["javbus", "javdb", "fanza", "mgstage", "fc2", "avsox"]
 
     # if the input file name matches centain rules,
     # move some web service to the begining of the list
@@ -100,7 +104,6 @@ def getDataFromJSON(file_number):  # 从JSON返回元数据
     imagecut = json_data['imagecut']
     tag = str(json_data['tag']).strip("[ ]").replace("'", '').replace(" ", '').split(',')  # 字符串转列表 @
     actor = str(actor_list).strip("[ ]").replace("'", '').replace(" ", '')
-
 
     if title == '' or number == '':
         raise Exception('[-]Movie Data not found!')
@@ -145,6 +148,42 @@ def get_info(json_data):  # 返回json里的数据
     website = json_data['website']
     return title, studio, year, outline, runtime, director, actor_photo, release, number, cover, website
 
+
+def download_posterCover_file(url, folder, folder_path=config.temp_folder):
+    # if imagecut == 3: # 3 是缩略图
+
+    if config.media_server == MediaServer.EMBY:  # 保存[name].png
+        DownloadFileWithFilename(cover_small, '1.jpg', path, filepath, failed_folder)
+        try:
+            img = Image.open(path + '/1.jpg')
+        except Exception:
+            img = Image.open('1.jpg')
+        w = img.width
+        h = img.height
+        img.save(path + '/' + number + c_word + '.png')
+        time.sleep(1)
+        os.remove(path + '/1.jpg')
+    elif config.media_server == MediaServer.KODI:  # 保存[name]-poster.jpg
+        DownloadFileWithFilename(cover_small, '1.jpg', path, filepath, failed_folder)
+        try:
+            img = Image.open(path + '/1.jpg')
+        except Exception:
+            img = Image.open('1.jpg')
+        w = img.width
+        h = img.height
+        img.save(path + '/' + number + c_word + '-poster.jpg')
+        time.sleep(1)
+        os.remove(path + '/1.jpg')
+    elif option == 'plex':  # 保存 poster.jpg
+        DownloadFileWithFilename(cover_small, '1.jpg', path, filepath, failed_folder)
+        try:
+            img = Image.open(path + '/1.jpg')
+        except Exception:
+            img = Image.open('1.jpg')
+        w = img.width
+        h = img.height
+        img.save(path + '/poster.jpg')
+        os.remove(path + '/1.jpg')
 
 def smallCoverCheck(path, number, imagecut, cover_small, c_word, option, filepath, failed_folder):
     if imagecut == 3:
@@ -203,37 +242,64 @@ def creatFolder(success_folder, location_rule, json_data, escapeLiterals):  # �
 
 
 # =====================资源下载部分===========================
-def DownloadFileWithFilename(url, filename, path, filepath, failed_folder):  # path = examle:photo , video.in the Project Folder!
+def download_file(url, folder, name_with_ext):
+    """
+    download file
+    :param url: source url
+    :param name_with_ext:  full name like 'mike.jpg'
+    :param folder: folder path
+    :return: full path if downloaded file like '/Users/proj/AV_Data_Capture/mike.jpg'
+    """
+    proxy_dict = {"http": str(config.proxy), "https": str(config.proxy)} if config.proxy else None
+    i = 0
+    while i < config.retry:
+        try:
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'}
+            r = requests.get(url, headers=headers, timeout=config.timeout,
+                             proxies=proxy_dict)
+            if r == '':
+                print('[-]Movie Data not found!')
+                return
+            with open(str(folder) + "/" + name_with_ext, "wb") as code:
+                code.write(r.content)
+            return str(folder) + "/" + name_with_ext
+        except requests.exceptions.RequestException:
+            i += 1
+            print('[-]Image Download :  Connect retry ' + str(i) + '/' + str(config.retry))
+        except requests.exceptions.ConnectionError:
+            i += 1
+            print('[-]Image Download :  Connect retry ' + str(i) + '/' + str(config.retry))
+        except requests.exceptions.ProxyError:
+            i += 1
+            print('[-]Image Download :  Connect retry ' + str(i) + '/' + str(config.retry))
+        except requests.exceptions.ConnectTimeout:
+            i += 1
+            print('[-]Image Download :  Connect retry ' + str(i) + '/' + str(config.retry))
+
+
+
+def DownloadFileWithFilename(url, filename, path, filepath,
+                             failed_folder):  # path = examle:photo , video.in the Project Folder!
     proxy, timeout, retry_count = get_network_settings()
     i = 0
-
+    proxy_dict = {"http": str(config.proxy), "https": str(config.proxy)} if proxy else None
     while i < retry_count:
         try:
-            if not proxy == '':
-                if not os.path.exists(path):
-                    os.makedirs(path)
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'}
-                r = requests.get(url, headers=headers, timeout=timeout,
-                                 proxies={"http": str(proxy), "https": str(proxy)})
-                if r == '':
-                    print('[-]Movie Data not found!')
-                    return 
-                with open(str(path) + "/" + filename, "wb") as code:
-                    code.write(r.content)
+            if not os.path.exists(path):
+                os.makedirs(path)
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'}
+            r = requests.get(url, headers=headers, timeout=timeout,
+                             proxies=proxy_dict)
+            if r == '':
+                print('[-]Movie Data not found!')
                 return
-            else:
-                if not os.path.exists(path):
-                    os.makedirs(path)
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'}
-                r = requests.get(url, timeout=timeout, headers=headers)
-                if r == '':
-                    print('[-]Movie Data not found!')
-                    return 
-                with open(str(path) + "/" + filename, "wb") as code:
-                    code.write(r.content)
-                return
+            with open(str(path) + "/" + filename, "wb") as code:
+                code.write(r.content)
+            return
         except requests.exceptions.RequestException:
             i += 1
             print('[-]Image Download :  Connect retry ' + str(i) + '/' + str(retry_count))
@@ -315,6 +381,182 @@ def imageDownload(option, cover, number, c_word, path, multi_part, filepath, fai
             else:
                 break
         print('[+]Image Downloaded!', path + '/' + number + c_word + '-fanart.jpg')
+
+
+def make_nfo_file(nfo, nfo_name, folder_path=config.temp_folder):
+    """
+    make xxx.nfo in folder
+    :param nfo_name: name
+    :param nfo: nfo dict
+    :param folder_path: where to create file, default temp_folder
+    :param media_server: plex emby jellyfish or so on, default jellyfin
+    :return:
+    """
+    title, studio, year, outline, runtime, director, actor_photo, release, number, cover, website = get_info(nfo)
+    naming_rule = nfo['naming_rule']
+    tag = nfo['tag']
+
+    path = folder_path
+    c_word = ''
+    cn_sub = ''
+    part = ''
+    # path_file = path + "/" + number + c_word + ".nfo", "wt"
+    path_file = path + "/" + nfo_name + c_word + ".nfo", "wt"
+    try:
+        if not os.path.exists(path):
+            os.makedirs(path)
+        if config.media_server == MediaServer.PLEX:
+            with open(path_file, "wt", encoding='UTF-8') as code:
+                print('<?xml version="1.0" encoding="UTF-8" ?>', file=code)
+                print("<movie>", file=code)
+                print(" <title>" + naming_rule + part + "</title>", file=code)
+                print("  <set>", file=code)
+                print("  </set>", file=code)
+                print("  <studio>" + studio + "+</studio>", file=code)
+                print("  <year>" + year + "</year>", file=code)
+                print("  <outline>" + outline + "</outline>", file=code)
+                print("  <plot>" + outline + "</plot>", file=code)
+                print("  <runtime>" + str(runtime).replace(" ", "") + "</runtime>", file=code)
+                print("  <director>" + director + "</director>", file=code)
+                print("  <poster>poster.jpg</poster>", file=code)
+                print("  <thumb>thumb.png</thumb>", file=code)
+                print("  <fanart>fanart.jpg</fanart>", file=code)
+                try:
+                    for key, value in actor_photo.items():
+                        print("  <actor>", file=code)
+                        print("   <name>" + key + "</name>", file=code)
+                        if not value == '':  # or actor_photo == []:
+                            print("   <thumb>" + value + "</thumb>", file=code)
+                        print("  </actor>", file=code)
+                except:
+                    aaaa = ''
+                print("  <maker>" + studio + "</maker>", file=code)
+                print("  <label>", file=code)
+                print("  </label>", file=code)
+                if cn_sub == '1':
+                    print("  <tag>中文字幕</tag>", file=code)
+                try:
+                    for i in str(tag).strip("[ ]").replace("'", '').replace(" ", '').split(','):
+                        print("  <tag>" + i + "</tag>", file=code)
+                except:
+                    aaaaa = ''
+                try:
+                    for i in str(tag).strip("[ ]").replace("'", '').replace(" ", '').split(','):
+                        print("  <genre>" + i + "</genre>", file=code)
+                except:
+                    aaaaaaaa = ''
+                if cn_sub == '1':
+                    print("  <genre>中文字幕</genre>", file=code)
+                print("  <num>" + number + "</num>", file=code)
+                print("  <release>" + release + "</release>", file=code)
+                print("  <cover>" + cover + "</cover>", file=code)
+                print("  <website>" + website + "</website>", file=code)
+                print("</movie>", file=code)
+                print("[+]Writeed!          " + path + "/" + number + ".nfo")
+        elif media_server == MediaServer.EMBY:
+            with open(path_file, "wt", encoding='UTF-8') as code:
+                print('<?xml version="1.0" encoding="UTF-8" ?>', file=code)
+                print("<movie>", file=code)
+                print(" <title>" + naming_rule + part + "</title>", file=code)
+                print("  <set>", file=code)
+                print("  </set>", file=code)
+                print("  <studio>" + studio + "+</studio>", file=code)
+                print("  <year>" + year + "</year>", file=code)
+                print("  <outline>" + outline + "</outline>", file=code)
+                print("  <plot>" + outline + "</plot>", file=code)
+                print("  <runtime>" + str(runtime).replace(" ", "") + "</runtime>", file=code)
+                print("  <director>" + director + "</director>", file=code)
+                print("  <poster>" + number + c_word + ".png</poster>", file=code)
+                print("  <thumb>" + number + c_word + ".png</thumb>", file=code)
+                print("  <fanart>" + number + c_word + '.jpg' + "</fanart>", file=code)
+                try:
+                    for key, value in actor_photo.items():
+                        print("  <actor>", file=code)
+                        print("   <name>" + key + "</name>", file=code)
+                        if not value == '':  # or actor_photo == []:
+                            print("   <thumb>" + value + "</thumb>", file=code)
+                        print("  </actor>", file=code)
+                except:
+                    aaaa = ''
+                print("  <maker>" + studio + "</maker>", file=code)
+                print("  <label>", file=code)
+                print("  </label>", file=code)
+                if cn_sub == '1':
+                    print("  <tag>中文字幕</tag>", file=code)
+                try:
+                    for i in tag:
+                        print("  <tag>" + i + "</tag>", file=code)
+                except:
+                    aaaaa = ''
+                try:
+                    for i in tag:
+                        print("  <genre>" + i + "</genre>", file=code)
+                except:
+                    aaaaaaaa = ''
+                if cn_sub == '1':
+                    print("  <genre>中文字幕</genre>", file=code)
+                print("  <num>" + number + "</num>", file=code)
+                print("  <premiered>" + release + "</premiered>", file=code)
+                print("  <cover>" + cover + "</cover>", file=code)
+                print("  <website>" + website + "</website>", file=code)
+                print("</movie>", file=code)
+                print("[+]Writeed!          " + path + "/" + number + c_word + ".nfo")
+        elif media_server == MediaServer.KODI:
+            with open(path_file, "wt", encoding='UTF-8') as code:
+                print('<?xml version="1.0" encoding="UTF-8" ?>', file=code)
+                print("<movie>", file=code)
+                print(" <title>" + naming_rule + part + "</title>", file=code)
+                print("  <set>", file=code)
+                print("  </set>", file=code)
+                print("  <studio>" + studio + "+</studio>", file=code)
+                print("  <year>" + year + "</year>", file=code)
+                print("  <outline>" + outline + "</outline>", file=code)
+                print("  <plot>" + outline + "</plot>", file=code)
+                print("  <runtime>" + str(runtime).replace(" ", "") + "</runtime>", file=code)
+                print("  <director>" + director + "</director>", file=code)
+                print("  <poster>" + number + c_word + "-poster.jpg</poster>", file=code)
+                print("  <fanart>" + number + c_word + '-fanart.jpg' + "</fanart>", file=code)
+                try:
+                    for key, value in actor_photo.items():
+                        print("  <actor>", file=code)
+                        print("   <name>" + key + "</name>", file=code)
+                        if not value == '':  # or actor_photo == []:
+                            print("   <thumb>" + value + "</thumb>", file=code)
+                        print("  </actor>", file=code)
+                except:
+                    aaaa = ''
+                print("  <maker>" + studio + "</maker>", file=code)
+                print("  <label>", file=code)
+                print("  </label>", file=code)
+                if cn_sub == '1':
+                    print("  <tag>中文字幕</tag>", file=code)
+                try:
+                    for i in tag:
+                        print("  <tag>" + i + "</tag>", file=code)
+                except:
+                    aaaaa = ''
+                try:
+                    for i in tag:
+                        print("  <genre>" + i + "</genre>", file=code)
+                except:
+                    aaaaaaaa = ''
+                if cn_sub == '1':
+                    print("  <genre>中文字幕</genre>", file=code)
+                print("  <num>" + number + "</num>", file=code)
+                print("  <release>" + release + "</release>", file=code)
+                print("  <cover>" + cover + "</cover>", file=code)
+                print("  <website>" + website + "</website>", file=code)
+                print("</movie>", file=code)
+                print("[+]Writeed!          " + path + "/" + number + c_word + ".nfo")
+    except IOError as e:
+        print("[-]Write Failed! :" + e)
+        # print(e)
+        # moveFailedFolder(filepath, failed_folder)
+        return
+    except Exception as e:
+        print("[-]Write Failed! :" + e)
+        # moveFailedFolder(filepath, failed_folder)
+        return
 
 
 def PrintFiles(option, path, c_word, naming_rule, part, cn_sub, json_data, filepath, failed_folder, tag):
@@ -552,10 +794,10 @@ def pasteFileToFolder(filepath, path, number, c_word):  # 文件路径，番号�
     except FileExistsError:
         print('[-]File Exists! Please check your movie!')
         print('[-]move to the root folder of the program.')
-        return 
+        return
     except PermissionError:
         print('[-]Error! Please run as administrator!')
-        return 
+        return
 
 
 def pasteFileToFolder_mode2(filepath, path, multi_part, number, part, c_word):  # 文件路径，番号，后缀，要移动至的位置
@@ -580,10 +822,10 @@ def pasteFileToFolder_mode2(filepath, path, multi_part, number, part, c_word):  
     except FileExistsError:
         print('[-]File Exists! Please check your movie!')
         print('[-]move to the root folder of the program.')
-        return 
+        return
     except PermissionError:
         print('[-]Error! Please run as administrator!')
-        return 
+        return
 
 
 def copyRenameJpgToBackdrop(option, path, number, c_word):
@@ -637,7 +879,6 @@ def core_main(number_th):
     except:
         print('[-]Config media_warehouse read failed!')
 
-
     # filepath = file_path  # 影片的路径
     number = number_th
     json_data = {}
@@ -647,12 +888,12 @@ def core_main(number_th):
         print(e)
         pass
     # if json_data.get('number') != number:
-        # fix issue #119
-        # the root cause is we normalize the search id
-        # PrintFiles() will use the normalized id from website,
-        # but pasteFileToFolder() still use the input raw search id
-        # so the solution is: use the normalized search id
-        # number = json_data["number"]
+    # fix issue #119
+    # the root cause is we normalize the search id
+    # PrintFiles() will use the normalized id from website,
+    # but pasteFileToFolder() still use the input raw search id
+    # so the solution is: use the normalized search id
+    # number = json_data["number"]
     # imagecut = json_data['imagecut']
     # tag = json_data['tag']
     # =======================================================================判断-C,-CD后缀
@@ -676,7 +917,7 @@ def core_main(number_th):
     #     imageDownload(option, json_data['cover'], number, c_word, path, multi_part, filepath, config.failed_folder)  # creatFoder会返回番号路径
     #     cutImage(option, imagecut, path, number, c_word)  # 裁剪图
     #     copyRenameJpgToBackdrop(option, path, number, c_word)
-    #     PrintFiles(option, path, c_word, json_data['naming_rule'], part, cn_sub, json_data, filepath, config.failed_folder, tag)  # 打印文件
+    #     PrintFiles(option, path, c_word, json_data['naming_rule'], part, cn_sub, json_data, filepath, config.failed_folder, tag)  # 打印文件 .nfo
     #     pasteFileToFolder(filepath, path, number, c_word)  # 移动文件
     #     # =======================================================================整理模式
     # elif config.program_mode == '2':
