@@ -1,24 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import re
-import os
 import os.path
 import shutil
 from PIL import Image
-import time
 import json
 from ADC_function import *
-import argparse
 from MediaServer import *
 from AV_Data_Capture import config
 # =========website========
-import fc2fans_club
-import mgstage
-import avsox
-import javbus
-import javdb
-import fanza
+from SiteSource import avsox, javdb, fc2fans_club, javbus, fanza, mgstage
 import requests
+from enum import Enum, auto
 
 
 # =====================本地文件处理===========================
@@ -49,6 +41,15 @@ def CreatFailedFolder(failed_folder):
             return
 
         # 根据番号获取字典数据
+
+
+class SiteSource(Enum):
+    AVSOX = auto()
+    FC2 = auto()
+    FANZA = auto()
+    JAVDB = auto()
+    JAVBUS = auto()
+    MGSTAGE = auto()
 
 
 def getDataFromJSON(file_number):  # 从JSON返回元数据
@@ -149,41 +150,19 @@ def get_info(json_data):  # 返回json里的数据
     return title, studio, year, outline, runtime, director, actor_photo, release, number, cover, website
 
 
-def download_posterCover_file(url, folder, folder_path=config.temp_folder):
+def download_cover_file(url, name, folder_path):
+    """
+    download small cover
+    :param url: url
+    :param name:  name same as movie's name without ext
+    :param folder_path:  dir to save
+    :return:
+    """
     # if imagecut == 3: # 3 是缩略图
+    filename = config.media_server.poster_name(name)
+    DownloadFileWithFilename(url, filename, folder_path)
 
-    if config.media_server == MediaServer.EMBY:  # 保存[name].png
-        DownloadFileWithFilename(cover_small, '1.jpg', path, filepath, failed_folder)
-        try:
-            img = Image.open(path + '/1.jpg')
-        except Exception:
-            img = Image.open('1.jpg')
-        w = img.width
-        h = img.height
-        img.save(path + '/' + number + c_word + '.png')
-        time.sleep(1)
-        os.remove(path + '/1.jpg')
-    elif config.media_server == MediaServer.KODI:  # 保存[name]-poster.jpg
-        DownloadFileWithFilename(cover_small, '1.jpg', path, filepath, failed_folder)
-        try:
-            img = Image.open(path + '/1.jpg')
-        except Exception:
-            img = Image.open('1.jpg')
-        w = img.width
-        h = img.height
-        img.save(path + '/' + number + c_word + '-poster.jpg')
-        time.sleep(1)
-        os.remove(path + '/1.jpg')
-    elif option == 'plex':  # 保存 poster.jpg
-        DownloadFileWithFilename(cover_small, '1.jpg', path, filepath, failed_folder)
-        try:
-            img = Image.open(path + '/1.jpg')
-        except Exception:
-            img = Image.open('1.jpg')
-        w = img.width
-        h = img.height
-        img.save(path + '/poster.jpg')
-        os.remove(path + '/1.jpg')
+
 
 def smallCoverCheck(path, number, imagecut, cover_small, c_word, option, filepath, failed_folder):
     if imagecut == 3:
@@ -280,7 +259,6 @@ def download_file(url, folder, name_with_ext):
             print('[-]Image Download :  Connect retry ' + str(i) + '/' + str(config.retry))
 
 
-
 def DownloadFileWithFilename(url, filename, path, filepath,
                              failed_folder):  # path = examle:photo , video.in the Project Folder!
     proxy, timeout, retry_count = get_network_settings()
@@ -317,8 +295,13 @@ def DownloadFileWithFilename(url, filename, path, filepath,
     return
 
 
+def download_image(url, name, folder):
+    name_with_ext = config.media_server.image_name(name)
+    download_file(url, folder, name_with_ext)
+
+
 def imageDownload(option, cover, number, c_word, path, multi_part, filepath, failed_folder):  # 封面是否下载成功，否则移动到failed
-    if option == 'emby':
+    if option == 'emby': # name.jpg
         if DownloadFileWithFilename(cover, number + c_word + '.jpg', path, filepath, failed_folder) == 'failed':
             moveFailedFolder(filepath, failed_folder)
             return
@@ -342,7 +325,7 @@ def imageDownload(option, cover, number, c_word, path, multi_part, filepath, fai
             print('[+]Image Downloaded!', path + '/' + number + c_word + '.jpg')
         else:
             print('[+]Image Downloaded!', path + '/' + number + c_word + '.jpg')
-    elif option == 'plex':
+    elif option == 'plex': # fanart.jpg
         if DownloadFileWithFilename(cover, 'fanart.jpg', path, filepath, failed_folder) == 'failed':
             moveFailedFolder(filepath, failed_folder)
             return
@@ -363,7 +346,7 @@ def imageDownload(option, cover, number, c_word, path, multi_part, filepath, fai
             print('[!]Image Download Failed! Trying again.')
             DownloadFileWithFilename(cover, number + c_word + '.jpg', path, filepath, failed_folder)
         print('[+]Image Downloaded!', path + '/fanart.jpg')
-    elif option == 'kodi':
+    elif option == 'kodi': # [name]-fanart.jpg
         if DownloadFileWithFilename(cover, number + c_word + '-fanart.jpg', path, filepath, failed_folder) == 'failed':
             moveFailedFolder(filepath, failed_folder)
             return
@@ -383,7 +366,7 @@ def imageDownload(option, cover, number, c_word, path, multi_part, filepath, fai
         print('[+]Image Downloaded!', path + '/' + number + c_word + '-fanart.jpg')
 
 
-def make_nfo_file(nfo, nfo_name, folder_path=config.temp_folder):
+def make_nfo_file(nfo, nfo_name, folder_path):
     """
     make xxx.nfo in folder
     :param nfo_name: name
@@ -453,7 +436,7 @@ def make_nfo_file(nfo, nfo_name, folder_path=config.temp_folder):
                 print("  <website>" + website + "</website>", file=code)
                 print("</movie>", file=code)
                 print("[+]Writeed!          " + path + "/" + number + ".nfo")
-        elif media_server == MediaServer.EMBY:
+        elif config.media_server == MediaServer.EMBY:
             with open(path_file, "wt", encoding='UTF-8') as code:
                 print('<?xml version="1.0" encoding="UTF-8" ?>', file=code)
                 print("<movie>", file=code)
@@ -501,7 +484,7 @@ def make_nfo_file(nfo, nfo_name, folder_path=config.temp_folder):
                 print("  <website>" + website + "</website>", file=code)
                 print("</movie>", file=code)
                 print("[+]Writeed!          " + path + "/" + number + c_word + ".nfo")
-        elif media_server == MediaServer.KODI:
+        elif config.media_server == MediaServer.KODI:
             with open(path_file, "wt", encoding='UTF-8') as code:
                 print('<?xml version="1.0" encoding="UTF-8" ?>', file=code)
                 print("<movie>", file=code)

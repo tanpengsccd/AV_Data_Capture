@@ -59,14 +59,6 @@ def movie_lists(escape_folders):
     return total
 
 
-def CreatFailedFolder(failed_folder):
-    if not os.path.exists(failed_folder + '/'):  # 新建failed文件夹
-        try:
-            os.makedirs(failed_folder + '/')
-        except:
-            print("[-]failed!can not be make folder 'failed'\n[-](Please run as Administrator)")
-            os._exit(0)
-
 
 # def CEF(path):
 #     try:
@@ -172,6 +164,8 @@ def get_numbers(paths):
             pass
 
     return maps
+
+
 
 
 if __name__ == '__main__':
@@ -292,8 +286,34 @@ if __name__ == '__main__':
     for code_number, nfo in codeNumberEpisode_nfo_paths.items():
         print(code_number + ":")
         print("-----" + nfo)
-        #创建 nfo 和 海报
-        make_nfo_file(nfo, code_number)
+        temp_path_to_save = config.temp_folder + '/' + code_number
+        # 1 创建 番号文件夹
+        os.makedirs(temp_path_to_save, exist_ok=True)
+        # 2 创建缩略图海报
+        download_cover_file(nfo['cover_small'], code_number, temp_path_to_save)
+        # 3 创建图
+        download_image(nfo['cover'], code_number, temp_path_to_save)
+        # 4 剪裁
+
+        # 5 背景图
+        
+        # 6 创建 nfo
+        make_nfo_file(nfo, code_number, temp_path_to_save)
+
+
+    # if config.program_mode == '1':
+    #     if multi_part == 1:
+    #         number += part  # 这时number会被附加上CD1后缀
+    #     smallCoverCheck(path, number, imagecut, json_data['cover_small'], c_word, option, filepath, config.failed_folder)  # 检查小封面
+    #     imageDownload(option, json_data['cover'], number, c_word, path, multi_part, filepath, config.failed_folder)  # creatFoder会返回番号路径
+    #     cutImage(option, imagecut, path, number, c_word)  # 裁剪图
+    #     copyRenameJpgToBackdrop(option, path, number, c_word)
+    #     PrintFiles(option, path, c_word, json_data['naming_rule'], part, cn_sub, json_data, filepath, config.failed_folder, tag)  # 打印文件 .nfo
+    #     pasteFileToFolder(filepath, path, number, c_word)  # 移动文件
+    #     # =======================================================================整理模式
+    # elif config.program_mode == '2':
+    #     pasteFileToFolder_mode2(filepath, path, multi_part, number, part, c_word)  # 移动文件
+
     # CEF(config.success_folder)
     # CEF(config.failed_folder)
     print("[+]All finished!!!")
