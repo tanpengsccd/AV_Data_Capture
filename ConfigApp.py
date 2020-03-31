@@ -14,14 +14,15 @@ class ConfigApp:
         self.search_folder = config['common']['search_folder']  # 搜索路径
         self.temp_folder = config['common']['temp_folder']  # 临时资源路径
         self.soft_link = (config['common']['soft_link'] == 1)
-        self.escape_literals = (config['escape']['literals'] == 1)
+        # self.escape_literals = (config['escape']['literals'] == 1)
         self.naming_rule = config['Name_Rule']['naming_rule']
         self.location_rule = config['Name_Rule']['location_rule']
 
         self.proxy = config['proxy']['proxy']
-        self.timeout = config['proxy']['timeout']
-        self.retry = config['proxy']['retry']
+        self.timeout = float(config['proxy']['timeout'])
+        self.retry = int(config['proxy']['retry'])
         self.media_server = MediaServer[config['media']['media_warehouse']]
         self.update_check = config['update']['update_check']
+        self.debug_mode = config['debug_mode']['switch']
 
 

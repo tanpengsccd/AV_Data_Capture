@@ -120,8 +120,8 @@ def getDataFromJSON(file_number):  # 从JSON返回元数据
         cover_small = tmpArr[0].strip('\"').strip('\'')
     # ====================处理异常字符 END================== #\/:*?"<>|
 
-    naming_rule = eval(config['Name_Rule']['naming_rule'])
-    location_rule = eval(config['Name_Rule']['location_rule'])
+    naming_rule = eval(config.naming_rule)
+    location_rule = eval(config.location_rule)
 
     # 返回处理后的json_data
     json_data['title'] = title
@@ -235,8 +235,7 @@ def download_file(url, folder, name_with_ext):
                 os.makedirs(folder)
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'}
-            r = requests.get(url, headers=headers, timeout=config.timeout,
-                             proxies=proxy_dict)
+            r = requests.get(url, headers=headers, timeout=config.timeout, proxies=proxy_dict)
             if r == '':
                 print('[-]Movie Data not found!')
                 return
@@ -315,9 +314,9 @@ def imageDownload(option, cover, number, c_word, path, multi_part, filepath, fai
             print('[+]Image Downloaded!', path + '/' + number + c_word + '.jpg')
             return
         i = 1
-        while i <= int(config['proxy']['retry']):
+        while i <= int(config.retry):
             if os.path.getsize(path + '/' + number + c_word + '.jpg') == 0:
-                print('[!]Image Download Failed! Trying again. [' + config['proxy']['retry'] + '/3]')
+                print('[!]Image Download Failed! Trying again. [' + config.retry + '/3]')
                 DownloadFileWithFilename(cover, number + c_word + '.jpg', path, filepath, failed_folder)
                 i = i + 1
                 continue
@@ -339,9 +338,9 @@ def imageDownload(option, cover, number, c_word, path, multi_part, filepath, fai
             print('[+]Image Downloaded!', path + '/fanart.jpg')
             return
         i = 1
-        while i <= int(config['proxy']['retry']):
+        while i <= int(config.retry):
             if os.path.getsize(path + '/fanart.jpg') == 0:
-                print('[!]Image Download Failed! Trying again. [' + config['proxy']['retry'] + '/3]')
+                print('[!]Image Download Failed! Trying again. [' + config.retry + '/3]')
                 DownloadFileWithFilename(cover, 'fanart.jpg', path, filepath, failed_folder)
                 i = i + 1
                 continue
@@ -360,9 +359,9 @@ def imageDownload(option, cover, number, c_word, path, multi_part, filepath, fai
             print('[+]Image Downloaded!', path + '/' + number + c_word + '-fanart.jpg')
             return
         i = 1
-        while i <= int(config['proxy']['retry']):
+        while i <= int(config.retry):
             if os.path.getsize(path + '/' + number + c_word + '-fanart.jpg') == 0:
-                print('[!]Image Download Failed! Trying again. [' + config['proxy']['retry'] + '/3]')
+                print('[!]Image Download Failed! Trying again. [' + config.retry + '/3]')
                 DownloadFileWithFilename(cover, number + c_word + '-fanart.jpg', path, filepath, failed_folder)
                 i = i + 1
                 continue
@@ -389,7 +388,7 @@ def make_nfo_file(nfo, nfo_name, folder_path):
     cn_sub = ''
     part = ''
     # path_file = path + "/" + number + c_word + ".nfo", "wt"
-    path_file = path + "/" + nfo_name + c_word + ".nfo", "wt"
+    path_file = path + "/" + nfo_name + c_word + ".nfo"
     try:
         if not os.path.exists(path):
             os.makedirs(path)
@@ -772,7 +771,7 @@ def cutImage(option, imagecut, path, number, c_word):
 def pasteFileToFolder(filepath, path, number, c_word):  # 文件路径，番号，后缀，要移动至的位置
     houzhui = str(re.search('[.](avi|rmvb|wmv|mov|mp4|mkv|flv|ts|webm)$', filepath, re.IGNORECASE).group())
     try:
-        if config['common']['soft_link'] == '1':  # 如果soft_link=1 使用软链接
+        if config.soft_link == '1':  # 如果soft_link=1 使用软链接
             os.symlink(filepath, path + '/' + number + c_word + houzhui)
         else:
             os.rename(filepath, path + '/' + number + c_word + houzhui)
@@ -799,7 +798,7 @@ def pasteFileToFolder_mode2(filepath, path, multi_part, number, part, c_word):  
         number += part  # 这时number会被附加上CD1后缀
     houzhui = str(re.search('[.](avi|rmvb|wmv|mov|mp4|mkv|flv|ts|webm)$', filepath, re.IGNORECASE).group())
     try:
-        if config['common']['soft_link'] == '1':
+        if config.soft_link== '1':
             os.symlink(filepath, path + '/' + number + part + c_word + houzhui)
         else:
             os.rename(filepath, path + '/' + number + part + c_word + houzhui)
@@ -852,7 +851,7 @@ def get_part(filepath, failed_folder):
 
 def debug_mode(json_data):
     try:
-        if config['debug_mode']['switch'] == '1':
+        if config.debug_mode == '1':
             print('[+] ---Debug info---')
             for i, v in json_data.items():
                 if i == 'outline':

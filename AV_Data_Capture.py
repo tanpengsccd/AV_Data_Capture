@@ -230,8 +230,8 @@ if __name__ == '__main__':
             print((code if code else 'unknown') + ":")
             [print('----ep:' + str(code_ep_path[1]) + '  path:' + str(code_ep_path[2])) for code_ep_path in
              code_ep_paths.values]
-    isContinue = input('继续？Y or N\n')
-    if isContinue != "Y":
+    isContinue = input('继续? N 退出 \n')
+    if isContinue.strip(' ') == "N":
         exit(1)
 
     # ========== 野鸡番号拖动 ==========
