@@ -10,7 +10,7 @@ import sys
 from lxml import etree
 import sys
 import io
-import ConfigApp
+from ConfigApp import ConfigApp
 # sys.stdout = io.TextIOWrapper(sys.stdout.buffer, errors = 'replace', line_buffering = True)
 # sys.setdefaultencoding('utf-8')
 
@@ -64,11 +64,14 @@ import ConfigApp
 #     except:
 #         print('[-]Config.ini read failed! Please use the offical file!')
 
+config = ConfigApp()
+
+
 def get_network_settings():
     try:
-        proxy = config["proxy"]["proxy"]
-        timeout = int(config["proxy"]["timeout"])
-        retry_count = int(config["proxy"]["retry"])
+        proxy = config.proxy
+        timeout = int(config.timeout)
+        retry_count = int(config.retry)
         assert timeout > 0
         assert retry_count > 0
     except:
@@ -82,10 +85,10 @@ def getDataState(json_data):  # 元数据获取失败检测
         return 1
 
 def ReadMediaWarehouse():
-    return config['media']['media_warehouse']
+    return config.media_server
 
 def UpdateCheckSwitch():
-    check=str(config['update']['update_check'])
+    check=str(config.update_check)
     if check == '1':
         return '1'
     elif check == '0':

@@ -21,6 +21,7 @@ class ConfigApp:
         self.proxy = config['proxy']['proxy']
         self.timeout = config['proxy']['timeout']
         self.retry = config['proxy']['retry']
-        self.media_server = MediaServer(config['media']['media_warehouse'])
+        self.media_server = MediaServer[config['media']['media_warehouse']]
+        self.update_check = config['update']['update_check']
 
 

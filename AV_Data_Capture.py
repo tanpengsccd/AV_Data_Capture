@@ -192,12 +192,14 @@ if __name__ == '__main__':
                 print(e)
 
     # 遍历搜索目录下所有视频的路径
-    movie_list = movie_lists(config.escape_folder)
+    # movie_list = movie_lists(config.escape_folder)
 
     # 以下是测试的数据
     # f = open('TestPathSpecial.txt', 'r')
-    # movie_list = [line[:-1] for line in f.readlines()]
-    # f.close()
+    f = open('TestPathNFO.txt', 'r')
+
+    movie_list = [line[:-1] for line in f.readlines()]
+    f.close()
     # 获取 番号,集数,路径  的字典->list
     code_ep_paths = [[codeEposode[0], codeEposode[1], path] for path, codeEposode in get_numbers(movie_list).items()]
     [print(i) for i in code_ep_paths]
@@ -285,18 +287,19 @@ if __name__ == '__main__':
 
     for code_number, nfo in codeNumberEpisode_nfo_paths.items():
         print(code_number + ":")
-        print("-----" + nfo)
+
         temp_path_to_save = config.temp_folder + '/' + code_number
         # 1 创建 番号文件夹
         os.makedirs(temp_path_to_save, exist_ok=True)
         # 2 创建缩略图海报
-        download_cover_file(nfo['cover_small'], code_number, temp_path_to_save)
+        if nfo['imagecut'] == 3:  # 3 是缩略图
+            download_cover_file(nfo['cover_small'], code_number, temp_path_to_save)
         # 3 创建图
         download_image(nfo['cover'], code_number, temp_path_to_save)
         # 4 剪裁
-
+        crop_image(nfo['imagecut'], code_number, temp_path_to_save)
         # 5 背景图
-        
+        copy_images_to_background_image(code_number, temp_path_to_save)
         # 6 创建 nfo
         make_nfo_file(nfo, code_number, temp_path_to_save)
 

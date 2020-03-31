@@ -158,10 +158,8 @@ def download_cover_file(url, name, folder_path):
     :param folder_path:  dir to save
     :return:
     """
-    # if imagecut == 3: # 3 是缩略图
     filename = config.media_server.poster_name(name)
     DownloadFileWithFilename(url, filename, folder_path)
-
 
 
 def smallCoverCheck(path, number, imagecut, cover_small, c_word, option, filepath, failed_folder):
@@ -275,7 +273,7 @@ def DownloadFileWithFilename(url, filename, path, filepath,
             if r == '':
                 print('[-]Movie Data not found!')
                 return
-            with open(str(path) + "/" + filename, "wb") as code:
+            with open(str(path) + "/" + filename, "wb")  as code:
                 code.write(r.content)
             return
         except requests.exceptions.RequestException:
@@ -296,12 +294,19 @@ def DownloadFileWithFilename(url, filename, path, filepath,
 
 
 def download_image(url, name, folder):
+    """
+    download img
+    :param url:  source
+    :param name:  name
+    :param folder: folder to save
+    :return:
+    """
     name_with_ext = config.media_server.image_name(name)
     download_file(url, folder, name_with_ext)
 
 
 def imageDownload(option, cover, number, c_word, path, multi_part, filepath, failed_folder):  # 封面是否下载成功，否则移动到failed
-    if option == 'emby': # name.jpg
+    if option == 'emby':  # name.jpg
         if DownloadFileWithFilename(cover, number + c_word + '.jpg', path, filepath, failed_folder) == 'failed':
             moveFailedFolder(filepath, failed_folder)
             return
@@ -325,7 +330,7 @@ def imageDownload(option, cover, number, c_word, path, multi_part, filepath, fai
             print('[+]Image Downloaded!', path + '/' + number + c_word + '.jpg')
         else:
             print('[+]Image Downloaded!', path + '/' + number + c_word + '.jpg')
-    elif option == 'plex': # fanart.jpg
+    elif option == 'plex':  # fanart.jpg
         if DownloadFileWithFilename(cover, 'fanart.jpg', path, filepath, failed_folder) == 'failed':
             moveFailedFolder(filepath, failed_folder)
             return
@@ -346,7 +351,7 @@ def imageDownload(option, cover, number, c_word, path, multi_part, filepath, fai
             print('[!]Image Download Failed! Trying again.')
             DownloadFileWithFilename(cover, number + c_word + '.jpg', path, filepath, failed_folder)
         print('[+]Image Downloaded!', path + '/fanart.jpg')
-    elif option == 'kodi': # [name]-fanart.jpg
+    elif option == 'kodi':  # [name]-fanart.jpg
         if DownloadFileWithFilename(cover, number + c_word + '-fanart.jpg', path, filepath, failed_folder) == 'failed':
             moveFailedFolder(filepath, failed_folder)
             return
@@ -702,9 +707,19 @@ def PrintFiles(option, path, c_word, naming_rule, part, cn_sub, json_data, filep
         return
 
 
+def crop_image(crop_style, name, path):
+    try:
+        origin_image = Image.open(path + '/' + config.media_server.image_name(name))
+        if crop_style == 1:
+            cropped_image = origin_image.crop((origin_image.width / 1.9, 0, origin_image.width, origin_image.height))
+        cropped_image.save(path + '/' + config.media_server.poster_name(name))
+    except Exception as e:
+        print('[-]Cover cut failed:' + e)
+
+
 def cutImage(option, imagecut, path, number, c_word):
     if option == 'plex':
-        if imagecut == 1:
+        if imagecut == 1:  # 截取右侧封面 fanart.jpg 截取为poster.jpg
             try:
                 img = Image.open(path + '/fanart.jpg')
                 imgSize = img.size
@@ -714,13 +729,13 @@ def cutImage(option, imagecut, path, number, c_word):
                 img2.save(path + '/poster.jpg')
             except:
                 print('[-]Cover cut failed!')
-        elif imagecut == 0:
+        elif imagecut == 0:  # 改名 fanart.jpg ->poster.jpg
             img = Image.open(path + '/fanart.jpg')
             w = img.width
             h = img.height
             img.save(path + '/poster.jpg')
     elif option == 'emby':
-        if imagecut == 1:
+        if imagecut == 1:  # 截取右侧封面 [name].jpg 截取为 [name].jpg
             try:
                 img = Image.open(path + '/' + number + c_word + '.jpg')
                 imgSize = img.size
@@ -730,26 +745,22 @@ def cutImage(option, imagecut, path, number, c_word):
                 img2.save(path + '/' + number + c_word + '.png')
             except:
                 print('[-]Cover cut failed!')
-        elif imagecut == 0:
+        elif imagecut == 0:  # [name].jpg -> [name].png
             img = Image.open(path + '/' + number + c_word + '.jpg')
-            w = img.width
-            h = img.height
             img.save(path + '/' + number + c_word + '.png')
     elif option == 'kodi':
-        if imagecut == 1:
+        if imagecut == 1:  # 截取右侧封面 [name]-fanart.jpg 截取为 [name]-poster.jpg
             try:
                 img = Image.open(path + '/' + number + c_word + '-fanart.jpg')
-                imgSize = img.size
                 w = img.width
                 h = img.height
                 img2 = img.crop((w / 1.9, 0, w, h))
                 img2.save(path + '/' + number + c_word + '-poster.jpg')
             except:
                 print('[-]Cover cut failed!')
-        elif imagecut == 0:
+        elif imagecut == 0:  # [name]-fanart.jpg 截取为 [name]-poster.jpg
             img = Image.open(path + '/' + number + c_word + '-fanart.jpg')
-            w = img.width
-            h = img.height
+
             try:
                 img = img.convert('RGB')
                 img.save(path + '/' + number + c_word + '-poster.jpg')
@@ -811,6 +822,12 @@ def pasteFileToFolder_mode2(filepath, path, multi_part, number, part, c_word):  
         return
 
 
+def copy_images_to_background_image(name, path):
+    shutil.copy(path + "/" + config.media_server.image_name(name), path + "/Backdrop.jpg")
+    if config.media_server == MediaServer.PLEX:
+        shutil.copy(path + "/" + config.media_server.poster_name(name), path + '/thumb.png')
+
+
 def copyRenameJpgToBackdrop(option, path, number, c_word):
     if option == 'plex':
         shutil.copy(path + '/fanart.jpg', path + '/Backdrop.jpg')
@@ -856,11 +873,6 @@ def core_main(number_th):
     c_word = ''
     option = ''
     cn_sub = ''
-
-    try:
-        option = ReadMediaWarehouse()
-    except:
-        print('[-]Config media_warehouse read failed!')
 
     # filepath = file_path  # 影片的路径
     number = number_th

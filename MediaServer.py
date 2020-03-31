@@ -8,8 +8,8 @@ class MediaServer(Enum):
 
     # media = EMBY
     #
-    def __init__(self, arg):
-        self = [e for e in MediaServer if arg.upper() == self.name]
+    # def __init__(self, arg):
+    #     self = [e for e in MediaServer if arg.upper() == self.name]
 
     def poster_name(self, name):
         if self == MediaServer.EMBY:  # 保存[name].png
