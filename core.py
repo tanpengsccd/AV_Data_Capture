@@ -256,8 +256,7 @@ def download_file(url, folder, name_with_ext):
             print('[-]Image Download :  Connect retry ' + str(i) + '/' + str(config.retry))
 
 
-def DownloadFileWithFilename(url, filename, path, filepath,
-                             failed_folder):  # path = examle:photo , video.in the Project Folder!
+def DownloadFileWithFilename(url, filename, path):  # path = examle:photo , video.in the Project Folder!
     proxy, timeout, retry_count = get_network_settings()
     i = 0
     proxy_dict = {"http": str(config.proxy), "https": str(config.proxy)} if proxy else None
@@ -288,7 +287,7 @@ def DownloadFileWithFilename(url, filename, path, filepath,
             i += 1
             print('[-]Image Download :  Connect retry ' + str(i) + '/' + str(retry_count))
     print('[-]Connect Failed! Please check your Proxy or Network!')
-    moveFailedFolder(filepath, failed_folder)
+    # moveFailedFolder(filepath, failed_folder)
     return
 
 
@@ -711,7 +710,10 @@ def crop_image(crop_style, name, path):
         origin_image = Image.open(path + '/' + config.media_server.image_name(name))
         if crop_style == 1:
             cropped_image = origin_image.crop((origin_image.width / 1.9, 0, origin_image.width, origin_image.height))
+        else:
+            cropped_image = origin_image
         cropped_image.save(path + '/' + config.media_server.poster_name(name))
+
     except Exception as e:
         print('[-]Cover cut failed:' + e)
 
