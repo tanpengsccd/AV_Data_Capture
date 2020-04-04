@@ -91,7 +91,7 @@ class PathNameProcessor:
                 # MKBD_S03-MaRieS
                 name = re.findall(r'[a-zA-Z|\d]+-[a-zA-Z|\d]*\d{2,}', name)[-1]
                 # 107NTTR-037 -> NTTR-037 , SIVR-00008 -> SIVR-008
-                searched = re.name(r'([a-zA-Z]{2,})-(?:0*)(\d{3,})', name)
+                searched = re.search(r'([a-zA-Z]{2,})-(?:0*)(\d{3,})', name)
                 if searched:
                     name = '-'.join(searched.groups())
 

@@ -143,13 +143,13 @@ if __name__ == '__main__':
     create_folder([path_infos, path_pics])
 
     # 遍历搜索目录下所有视频的路径
-    movie_list = movie_lists(config.escape_folder)
+    # movie_list = movie_lists(config.escape_folder)
 
     # 以下是从文本中提取测试的数据
-    # f = open('TestPathSpecial.txt', 'r')
-    # # f = open('TestPathNFO.txt', 'r')
-    # movie_list = [line[:-1] for line in f.readlines()]
-    # f.close()
+    f = open('TestPathSpecial.txt', 'r')
+    # f = open('TestPathNFO.txt', 'r')
+    movie_list = [line[:-1] for line in f.readlines()]
+    f.close()
 
     # 获取 番号,集数,路径  的字典->list
     code_ep_paths = [[codeEposode[0], codeEposode[1], path] for path, codeEposode in get_numbers(movie_list).items()]
