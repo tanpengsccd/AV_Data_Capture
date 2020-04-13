@@ -9,9 +9,9 @@ class PathNameProcessor:
 
     # def __init__(self):
 
-    # 移除干扰项
     @staticmethod
     def remove_distractions(origin_name):
+        """移除干扰项"""
         # 移除文件类型后缀
         origin_name = re.sub(PathNameProcessor.pattern_of_file_name_suffixes, '', origin_name, 0, re.IGNORECASE)
 
@@ -32,7 +32,6 @@ class PathNameProcessor:
         pattern_of_resolution_alphas = r'(?<![a-zA-Z])(SD|((F|U)|(Full|Ultra)[-_*. ~]?)?HD|BD|(blu[-_*. ~]?ray)|[hx]264|[hx]265|HEVC)'
         # 数字开头的 清晰度相关度 字符
         pattern_of_resolution_numbers = r'(?<!\d)(4K|(1080[ip])|(720p)|(480p))'
-        # pattern_of_date = r"\d{4}[-.]\d{1,2}[-.]\d{1,2}\ - "
         origin_name = re.sub(pattern_of_resolution_alphas, "-", origin_name, 0, re.IGNORECASE)
         origin_name = re.sub(pattern_of_resolution_numbers, "-", origin_name, 0, re.IGNORECASE)
         origin_name = re.sub(pattern_of_date, "-", origin_name)
@@ -48,9 +47,9 @@ class PathNameProcessor:
 
         return origin_name
 
-    # 提取尾部集数号 123ABC(只识别一位) part1 ，ipz.A  ， CD1 ， NOP019B.HD.wmv
     @staticmethod
     def extract_suffix_episode(origin_name):
+        """ 提取尾部集数号 123ABC(只识别一位) part1 ，ipz.A  ， CD1 ， NOP019B.HD.wmv"""
         episode = None
         with fuckit:
             # 零宽断言获取尾部数字 剧集数 123
@@ -64,13 +63,12 @@ class PathNameProcessor:
             origin_name = re.sub(pattern_episodes_alpha, "", origin_name)
         return episode, origin_name
 
-    # 可能文件名无番号，但是文件夹名含有番号
 
-    # 提取番号（可能不是正规番号）
-    # 纯数字番号：062212-055
-    # 字母+数字番号：N1180,mide072hhb,SIVR-00008
     @staticmethod
     def extract_code(origin_name):
+        """
+        提取集数和 规范过的番号
+        """
         name = None
         episode = None
         with fuckit:
@@ -103,7 +101,8 @@ class PathNameProcessor:
 
         with fuckit:
             # 零宽断言获取尾部字幕 剧集数 abc123
-            result_dict = re.search(rf'(?<={code})-?((?P<alpha>([A-Z](?![A-Z])))|(?P<num>\d(?!\d)))', origin_name, re.I).groupdict()
+            result_dict = re.search(rf'(?<={code})-?((?P<alpha>([A-Z](?![A-Z])))|(?P<num>\d(?!\d)))', origin_name,
+                                    re.I).groupdict()
             episode = result_dict['alpha'] or result_dict['num']
         return episode
 

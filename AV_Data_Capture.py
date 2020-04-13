@@ -8,6 +8,7 @@ import fuckit
 from tenacity import retry, stop_after_delay, wait_fixed
 import json
 import shutil
+import itertools
 import argparse
 from pathlib import Path
 import pandas as pd
@@ -16,10 +17,22 @@ from core import *
 from ConfigApp import ConfigApp
 from PathNameProcessor import PathNameProcessor
 
+# TODO 封装聚合解耦：CORE
+# TODO （学习）统一依赖管理工具
+# TODO 不同媒体服务器尽量兼容统一一种元数据 如nfo 海报等（emby，jellyfin，plex）
+# TODO 字幕整理功能 文件夹中读取所有字幕 并提番号放入对应缓存文件夹中TEMP
+
 config = ConfigApp()
 
 
-def safe_list_get(list_in, idx, default):
+def safe_list_get(list_in, idx, default=None):
+    """
+    数组安全取值
+    :param list_in:
+    :param idx:
+    :param default:
+    :return:
+    """
     try:
         return list_in[idx]
     except IndexError:
@@ -74,33 +87,37 @@ def movie_lists(escape_folders):
 #         a = ''
 #
 
-# 获取番号，集数
-def getNumber(filepath, absolute_path=False):
-    name = filepath.upper()  # 转大写
-    if absolute_path:
-        name = name.replace('\\', '/')
-
-    name = PathNameProcessor.remove_distractions(name)
-    suffix_episode, name = PathNameProcessor.extract_suffix_episode(name)
-
-    episode_behind_code, code_number = PathNameProcessor.extract_code(name)
-    code_number = code_number if code_number else ''
-    episode = suffix_episode if suffix_episode else episode_behind_code if episode_behind_code else ''
-
-    return code_number, episode
-
 
 def get_numbers(paths):
-    #  提取对应路径的番号+集数
+    """提取对应路径的番号+集数"""
+
+    def get_number(filepath, absolute_path=False):
+        """
+        获取番号，集数
+        :param filepath:
+        :param absolute_path:
+        :return:
+        """
+        name = filepath.upper()  # 转大写
+        if absolute_path:
+            name = name.replace('\\', '/')
+        # 移除干扰字段
+        name = PathNameProcessor.remove_distractions(name)
+        # 抽取 文件路径中可能存在的尾部集数，和抽取尾部集数的后的文件路径
+        suffix_episode, name = PathNameProcessor.extract_suffix_episode(name)
+        # 抽取 文件路径中可能存在的 番号后跟随的集数 和 处理后番号
+        episode_behind_code, code_number = PathNameProcessor.extract_code(name)
+        # 无番号 则设置空字符
+        code_number = code_number if code_number else ''
+        # 优先取尾部集数，无则取番号后的集数（几率低），都无则为空字符
+        episode = suffix_episode if suffix_episode else episode_behind_code if episode_behind_code else ''
+
+        return code_number, episode
 
     maps = {}
     for path in paths:
-        # try:
-        number, episode = getNumber(path)
+        number, episode = get_number(path)
         maps[path] = (number, episode)
-    # except:
-    #     maps[path] = ("unknown", '0')
-    #     pass
 
     return maps
 
@@ -115,7 +132,7 @@ def create_folder(paths):
                 print(path_to_make + " 已经存在")
                 pass
             except Exception as exception:
-                print('! 创建文件夹失败，请确认权限')
+                print('! 创建文件夹 ' + path_to_make + ' 失败，文件夹路径错误或权限不够')
                 raise exception
         else:
             raise Exception('！创建的文件夹路径为空，请确认')
@@ -155,32 +172,83 @@ if __name__ == '__main__':
     code_ep_paths = [[codeEposode[0], codeEposode[1], path] for path, codeEposode in get_numbers(movie_list).items()]
     [print(i) for i in code_ep_paths]
     #  按番号分组片子列表（重点），用于寻找相同番号的片子
-    # # 这里利用pandas分组 "https://pandas.pydata.org/pandas-docs/stable/user_guide/groupby.html"
+    '''
+    这里利用pandas分组 "https://pandas.pydata.org/pandas-docs/stable/user_guide/groupby.html"
+    
+    '''
     # # 设置打印时显示所有列
     # pd.set_option('display.max_columns', None)
     # # 显示所有行
     # pd.set_option('display.max_rows', None)
     # # 设置value的显示长度为100，默认为50
     # pd.set_option('max_colwidth', 30)
+    # # 创建框架
+    # df = pd.DataFrame(code_ep_paths, columns=('code', 'ep', 'path'))
+    # # 以番号分组
+    # groupedCode_code_ep_paths = df.groupby(['code'])
+    # # print(df.groupby(['code', 'ep']).describe().unstack())
+    # grouped_code_ep = df.groupby(['code', 'ep'])['path']
+    #
+    sorted_code_list = sorted(code_ep_paths, key=lambda code_ep_path: code_ep_path[0])
+    group_code_list = itertools.groupby(sorted_code_list, key=lambda code_ep_path: code_ep_path[0])
 
-    # 创建框架
-    df = pd.DataFrame(code_ep_paths, columns=('code', 'ep', 'path'))
-    # 以番号分组
-    groupedCode_code_ep_paths = df.groupby(['code'])
-    # print(df.groupby(['code']).describe().unstack())
 
-    print('---------------------------------')
+    # generator生成器
+    def group_code_list_to_dict(group_code_list):
+        data_dict = {}
+        for code, code_ep_path_group in group_code_list:
+            code_ep_path_list = list(code_ep_path_group)
+            eps_of_code = {}
+            group_ep_list = itertools.groupby(code_ep_path_list, key=lambda code_ep_path: code_ep_path[1])
+            for ep, group_ep_group in group_ep_list:
+                group_ep_list = list(group_ep_group)
+                eps_of_code[ep] = [code_ep_path[2] for code_ep_path in group_ep_list]
+            data_dict[code] = eps_of_code
+
+        return data_dict
+
+
+    def print_same_code_ep_path(data_dict_in):
+        for code_in in data_dict_in:
+            ep_path_list = data_dict_in[code_in]
+            if len(ep_path_list) > 1:
+                print('--' * 60)
+                print("|" + (code_in if code_in else 'unknown') + ":")
+
+                # group_ep_list = itertools.groupby(code_ep_path_list.items(), key=lambda code_ep_path: code_ep_path[0])
+                for ep in ep_path_list:
+                    path_list = ep_path_list[ep]
+                    print('--' * 12)
+                    ep = ep if ep else ' '
+                    if len(path_list) == 1:
+                        print('|           集数:' + ep + ' 文件: ' + path_list[0])
+                    else:
+                        print('|           集数:' + ep + ' 文件: ')
+                        for path in path_list:
+                            print('|                       ' + path)
+
+            else:
+                pass
+
+    data_dict_groupby_code_ep = group_code_list_to_dict(group_code_list)
+
+
+    print('--'*100)
     print("找到影片数量:" + str(len(movie_list)))
-    print("合计番号数量:" + str(len(groupedCode_code_ep_paths)) + "  (多个相同番号的影片只统计一个，不能识别的番号 都统一为'unknown')")
+    print("合计番号数量:" + str(len(data_dict_groupby_code_ep)) + "  (多个相同番号的影片只统计一个，不能识别的番号 都统一为'unknown')")
     print('Warning:!!!! 以下为相同番号的电影明细')
-    print('◤--------------------------------')
-    for code, code_ep_paths in groupedCode_code_ep_paths:
-        # itemPaths = list(path_numberEepisode)
-        if len(code_ep_paths) > 1:
-            print("|" + (code if code else 'unknown') + ":")
-            [print('|           集数:' + str(code_ep_path[1]) + '  路径: ' + str(code_ep_path[2])) for code_ep_path in
-             code_ep_paths.values]
-    print('◣---------------------------------')
+    print('◤' + '--' * 80)
+    print_same_code_ep_path(data_dict_groupby_code_ep)
+    print('◣' + '--' * 80)
+
+    # print('◤--------------------------------')
+    # for code, code_ep_paths in groupedCode_code_ep_paths:
+    #     groupedEp = code_ep_path
+    #     if len(code_ep_paths) > 1:
+    #         print("|" + (code if code else 'unknown') + ":")
+    #         [print('|           集数:' + str(code_ep_path[1]) + '  路径: ' + str(code_ep_path[2])) for code_ep_path in
+    #          code_ep_paths.values]
+    # print('◣---------------------------------')
     isContinue = input('继续? N 退出 \n')
     if isContinue.strip(' ') == "N":
         exit(1)
@@ -201,7 +269,7 @@ if __name__ == '__main__':
 
     count = 0
     count_all = str(len(movie_list))
-    count_all_grouped = str(len(groupedCode_code_ep_paths))
+    count_all_grouped = str(len(group_code_list))
     print('[+] Find ', count_all, ' movies,', count_all_grouped, ' numbers')
 
     # 创建 key为番号，value 为 番号信息的字典（貌似没用）
@@ -210,7 +278,7 @@ if __name__ == '__main__':
     #     print('[!] --- Soft link mode is ENABLE! ----')
 
     # 遍历按番号分组的集合，刮取番号信息并缓存
-    for code, code_ep_paths in groupedCode_code_ep_paths:
+    for code, code_ep_paths in group_code_list:
         count = count + 1
         percentage = str(count / int(count_all_grouped) * 100)[:4] + '%'
         print('[!] - ' + percentage + ' [' + str(count) + '/' + count_all_grouped + '] -')
@@ -233,8 +301,8 @@ if __name__ == '__main__':
                     print('联网搜刮：' + code)
                     nfo = core_main(code)
 
-                    # 把缓存信息写入缓存文件夹中
 
+                    # 把缓存信息写入缓存文件夹中，有时会设备占用而失败，重试即可
                     @retry(stop=stop_after_delay(3), wait=wait_fixed(2))
                     def read_file():
                         with open(file_path, 'w') as fp:
