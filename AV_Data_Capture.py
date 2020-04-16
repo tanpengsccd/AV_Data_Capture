@@ -260,18 +260,16 @@ if __name__ == '__main__':
     #     os._exit(0)
     # ========== 野鸡番号拖动 ==========
 
-    count = 0
-    count_all = str(len(movie_list))
-    count_all_grouped = str(len(data_dict_groupby_code_ep))
-    print('[+] Find ', count_all, ' movies,', count_all_grouped, ' numbers')
+
+
 
     def download_code_infos(data_dict_groupby_code_ep):
         """
          遍历按番号分组的集合，刮取番号信息并缓存
         :return: {code:nfo}
         """
-
-
+        count_all_grouped = len(data_dict_groupby_code_ep)
+        count = 0
         code_info_dict = {}
         for code in data_dict_groupby_code_ep:
             count = count + 1

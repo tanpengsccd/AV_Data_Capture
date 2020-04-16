@@ -26,8 +26,8 @@ class PathNameProcessor:
         # 移除干扰字段
         origin_name = origin_name.replace('22-sht.me', '-')
 
-        # 去除文件名中时间 1970-2100年 月 日
-        pattern_of_date = r'(?:-)(19[789]\d|2[01]\d{2})(-?(0\d|1[012])-?(0[1-9]|[12]\d|3[01])?)?'
+        # 去除文件名中时间 1970-2099年 月 日
+        pattern_of_date = r'(?:-)(19[789]\d|20\d{2})(-?(0\d|1[012])-?(0[1-9]|[12]\d|3[01])?)?[-.]'
         # 移除字母开头 清晰度相关度 字符
         pattern_of_resolution_alphas = r'(?<![a-zA-Z])(SD|((F|U)|(Full|Ultra)[-_*. ~]?)?HD|BD|(blu[-_*. ~]?ray)|[hx]264|[hx]265|HEVC)'
         # 数字开头的 清晰度相关度 字符
