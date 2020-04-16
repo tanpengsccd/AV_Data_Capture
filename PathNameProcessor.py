@@ -63,7 +63,6 @@ class PathNameProcessor:
             origin_name = re.sub(pattern_episodes_alpha, "", origin_name)
         return episode, origin_name
 
-
     @staticmethod
     def extract_code(origin_name):
         """
@@ -81,17 +80,19 @@ class PathNameProcessor:
                 # 非贪婪匹配非特殊字符，零宽断言后，数字至少2位连续,ipz221.part2 ， mide072hhb ,n1180
                 with fuckit:
                     name = re.findall(r'[a-zA-Z]+\d{2,}', name)[-1]
-                    # 比如MCDV-47 mcdv-047 是2个不一样的片子，但是 SIVR-00008 和 SIVR-008是同同一部
-                    name = re.sub(r'([a-zA-Z]{2,})(?:0*?)(\d{2,})', r'\1-\2', name)
+                    # 比如MCDV-47 mcdv-047 是2个不一样的片子，但是 SIVR-00008 和 SIVR-008是同同一部,但是heyzo除外,heyzo 是四位数
+                    if "heyzo" not in name.lower():
+                        name = re.sub(r'([a-zA-Z]{2,})(?:0*?)(\d{2,})', r'\1-\2', name)
 
             # 正则取含-的番号 【字母-[字母]数字】,数字必定大于2位 番号的数组的最后的一个元素
             with fuckit:
                 # MKBD_S03-MaRieS
                 name = re.findall(r'[a-zA-Z|\d]+-[a-zA-Z|\d]*\d{2,}', name)[-1]
-                # 107NTTR-037 -> NTTR-037 , SIVR-00008 -> SIVR-008
-                searched = re.search(r'([a-zA-Z]{2,})-(?:0*)(\d{3,})', name)
-                if searched:
-                    name = '-'.join(searched.groups())
+                # 107NTTR-037 -> NTTR-037 , SIVR-00008 -> SIVR-008 ，但是heyzo除外
+                if "heyzo" not in name.lower():
+                    searched = re.search(r'([a-zA-Z]{2,})-(?:0*)(\d{3,})', name)
+                    if searched:
+                        name = '-'.join(searched.groups())
 
         return episode, name
 
