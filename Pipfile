@@ -6,10 +6,14 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-lxml = "*"
 bs4 = "*"
-requests = "*"
 tenacity = "*"
+fuckit = "*"
+requests = "*"
+image = "*"
+lazyxml = {editable = true,git = "https://github.com/waynedyck/lazyxml.git",ref = "python-3-conversion_wd1"}
+lxml = "*"
+pyquery = "*"
 
 [requires]
 python_version = "3.8"

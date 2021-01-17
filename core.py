@@ -7,6 +7,7 @@ import json
 from ADC_function import *
 from MediaServer import *
 from AV_Data_Capture import config
+import lazyxml
 # =========website========
 from SiteSource import avsox, javdb, fc2fans_club, javbus, fanza, mgstage
 import requests
@@ -375,7 +376,6 @@ def make_nfo_file(nfo, nfo_name, folder_path):
     :param nfo_name: name
     :param nfo: nfo dict
     :param folder_path: where to create file, default temp_folder
-    :param media_server: plex emby jellyfish or so on, default jellyfin
     :return:
     """
     title, studio, year, outline, runtime, director, actor_photo, release, number, cover, website = get_info(nfo)
@@ -388,6 +388,7 @@ def make_nfo_file(nfo, nfo_name, folder_path):
     part = ''
     # path_file = path + "/" + number + c_word + ".nfo", "wt"
     path_file = path + "/" + nfo_name + c_word + ".nfo"
+    lazyxml.dump
     try:
         if not os.path.exists(path):
             os.makedirs(path)
@@ -877,12 +878,9 @@ def core_main(number_th):
 
     # filepath = file_path  # 影片的路径
     number = number_th
-    json_data = {}
-    try:
-        json_data = getDataFromJSON(number)  # 定义番号
-    except Exception as e:
-        print(e)
-        pass
+
+    json_data = getDataFromJSON(number)  # 定义番号
+
     # if json_data.get('number') != number:
     # fix issue #119
     # the root cause is we normalize the search id

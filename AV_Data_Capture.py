@@ -11,7 +11,6 @@ import shutil
 import itertools
 import argparse
 from pathlib import Path
-import pandas as pd
 
 from core import *
 from ConfigApp import ConfigApp
@@ -193,7 +192,6 @@ if __name__ == '__main__':
     group_code_list = itertools.groupby(sorted_code_list, key=lambda code_ep_path: code_ep_path[0])
 
 
-    # generator生成器
     def group_code_list_to_dict(group_code_list):
         data_dict = {}
         for code, code_ep_path_group in group_code_list:
@@ -242,9 +240,10 @@ if __name__ == '__main__':
     print_same_code_ep_path(data_dict_groupby_code_ep)
     print('◣' + '--' * 80)
 
-    isContinue = input('继续? N 退出 \n')
+    isContinue = input('任意键继续? N 退出 \n')
     if isContinue.strip(' ') == "N":
         exit(1)
+
 
     # ========== 野鸡番号拖动 ==========
     # number_argparse = argparse_get_file()
@@ -260,23 +259,24 @@ if __name__ == '__main__':
     #     os._exit(0)
     # ========== 野鸡番号拖动 ==========
 
-
-
-
-    def download_code_infos(data_dict_groupby_code_ep):
+    def download_code_infos(code_list, is_read_cache=True):
         """
          遍历按番号分组的集合，刮取番号信息并缓存
+
+        :param is_read_cache: 是否读取缓存数据
+        :param code_list:
         :return: {code:nfo}
         """
-        count_all_grouped = len(data_dict_groupby_code_ep)
+        count_all_grouped = len(code_list)
         count = 0
         code_info_dict = {}
-        for code in data_dict_groupby_code_ep:
+
+        for code in code_list:
             count = count + 1
             percentage = str(count / int(count_all_grouped) * 100)[:4] + '%'
             print('[!] - ' + percentage + ' [' + str(count) + '/' + str(count_all_grouped) + '] -')
             try:
-                print("[!]Fetching Data for   [" + code + "]")
+                print("[!]搜刮数据 [" + code + "]")
                 if code:
                     # 创建番号的文件夹
                     file_path = path_infos + '/' + code + '.json'
@@ -284,15 +284,16 @@ if __name__ == '__main__':
                     # 读取缓存信息，如果没有则联网搜刮
 
                     path = Path(file_path)
-                    if path.exists() and path.is_file() and path.stat().st_size > 0:
-                        print('找到缓存信息：' + code)
+                    if is_read_cache and (path.exists() and path.is_file() and path.stat().st_size > 0):
+                        print('找到缓存信息')
                         with open(file_path) as fp:
                             nfo = json.load(fp)
                     else:
 
                         # 核心功能 - 联网抓取信息字典
-                        print('联网搜刮：' + code)
+                        print('联网搜刮')
                         nfo = core_main(code)
+                        print('正在写入', end='')
 
                         # 把缓存信息写入缓存文件夹中，有时会设备占用而失败，重试即可
                         @retry(stop=stop_after_delay(3), wait=wait_fixed(2))
@@ -301,19 +302,15 @@ if __name__ == '__main__':
                                 json.dump(nfo, fp)
 
                         read_file()
-
+                        print('完成！')
                     # 将番号信息放入字典
                     code_info_dict[code] = nfo
                     print("[*]======================================================")
 
             except Exception as e:  # 番号的信息获取失败
+                code_info_dict[code] = ''
+                print("找不到信息:" + code + ',Reason:' + str(e))
 
-
-                print('[-]' + code + " Can't find info:" + code + ',Reason:' + str(e))
-                for code in data_dict_groupby_code_ep:
-                    for paths in data_dict_groupby_code_ep[code]:
-                        for path in paths:
-                            print("---", path)
                 # if config.soft_link:
                 #     print('[-]Link', file_path_name, 'to failed folder')
                 #     os.symlink(file_path_name, config.failed_folder + '/')
@@ -328,20 +325,26 @@ if __name__ == '__main__':
                 continue
         return code_info_dict
 
+
     print('----------------------------------')
     code_infos = download_code_infos(data_dict_groupby_code_ep)
+    print("----未找到番号数据的番号----")
+    print([print(code) for code in code_infos if code_infos[code] == ''])
+    print("-------------------------")
+
 
     def download_images_of_nfos(code_info_dict):
         """
         遍历番号信息，下载番号电影的海报，图片
         :param code_info_dict:
-        :return:
+        :return: 无图片的信息的番号
         """
 
+        code_list_empty_image = []
         for code in code_info_dict:
             nfo = code_info_dict[code]
             if len(nfo.keys()) == 0:
-                print(code + '：信息为空 忽略')
+                code_list_empty_image.append(code)
                 continue
 
             code_pics_folder_to_save = path_pics + '/' + code
@@ -364,26 +367,35 @@ if __name__ == '__main__':
                 print(code + '：海报下载中...')
                 download_file(nfo['cover'], code_pics_folder_to_save, 'poster.png')
                 print(code + '：海报下载完成')
-
-        # # 2 创建缩略图海报
-        # if nfo['imagecut'] == 3:  # 3 是缩略图
-        #     download_cover_file(nfo['cover_small'], code, code_pics_folder_to_save)
-        # # 3 创建图
-        # download_image(nfo['cover'], code, code_pics_folder_to_save)
-        # # 4 剪裁
-        # crop_image(nfo['imagecut'], code, code_pics_folder_to_save)
-        # # 5 背景图
-        # copy_images_to_background_image(code, code_pics_folder_to_save)
-        # 6 创建 mame.nfo(不需要，需要时从infos中josn文件转为nfo文件)
-        # make_nfo_file(nfo, code, temp_path_to_save)
+        return code_list_empty_image
 
 
-    download_images_of_nfos(code_infos)
+
+    code_list_empty = download_images_of_nfos(code_infos)
+    print("----未找到集数的番号----")
+    print([print(code) for code in code_list_empty])
+    print("------搜刮未找到集数的番号------")
+    code_infos_of_no_ep = download_code_infos(code_list_empty, is_read_cache=False)
+    print("----还是未找到番号数据的番号----")
+    print([print(code) for code in code_infos_of_no_ep if code_infos_of_no_ep[code] == ''])
+    print("----------------------")
     # 开始操作
+    # # 2 创建缩略图海报
+    # if nfo['imagecut'] == 3:  # 3 是缩略图
+    #     download_cover_file(nfo['cover_small'], code, code_pics_folder_to_save)
+    # # 3 创建图
+    # download_image(nfo['cover'], code, code_pics_folder_to_save)
+    # # 4 剪裁
+    # crop_image(nfo['imagecut'], code, code_pics_folder_to_save)
+    # # 5 背景图
+    # copy_images_to_background_image(code, code_pics_folder_to_save)
+    # 6 创建 mame.nfo(不需要，需要时从infos中josn文件转为nfo文件)
+    # make_nfo_file(nfo, code, temp_path_to_save)
     # 相同番号处理：按集数添加-CD[X]；视频格式 and 大小 分；
     # TODO 方式1 刮削：添加nfo，封面，内容截图等
-
-    # TODO 方式2 整理+刮削：按规则移动影片，字幕 到 演员，发行商，有无🐎 等
+    # 6 创建 mame.nfo(不需要，需要时从infos中josn文件转为nfo文件)
+    make_nfo_file(nfo, code, temp_path_to_save)
+    # TODO 方式2 整理：按规则移动影片，字幕 到 演员，发行商，有无🐎 等
 
     # if config.program_mode == '1':
     #     if multi_part == 1:
